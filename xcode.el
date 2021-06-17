@@ -27,30 +27,32 @@
         tvOS
         macOS")
 
-(defun xcode-extract-schemes (project-info)
-  (mapcar 'string-trim
-          (split-string
-           (substring project-info
-                      (+ 9 (string-match (regexp-quote "Schemes:") project-info)))
-           "\n")))
+(defun xcode-extract (project-info keyword stopword)
+  (cl-remove-if (apply-partially 'string= "")
+                (mapcar 'string-trim
+                        (split-string
+                         (substring project-info
+                                    (+ 9 (string-match (regexp-quote keyword) project-info))
+                                    (when stopword (string-match (regexp-quote stopword) project-info)))
+                         "\n"))))
 
-(defun xcode-print-schemes-list (schemes)
-  (let* ((nums (number-sequence 0 (length schemes)))
-         (schemes-pair (cl-mapcar 'cons nums schemes))
-         (scheme-strings (mapconcat (lambda (x)
-                                      (format "[%d] %s\n" (car x) (cdr x))) schemes-pair "")))
-    (princ "Select scheme:\n")
-    (princ scheme-strings)))
+(defun xcode-print-items-list (items name)
+  (let* ((nums (number-sequence 0 (length items)))
+         (items-pair (cl-mapcar 'cons nums items))
+         (item-strings (mapconcat (lambda (x)
+                                    (format "[%d] %s\n" (car x) (cdr x))) items-pair "")))
+    (princ (format "Select %s:\n" name))
+    (princ item-strings)))
 
-(defun xcode-get-nth-scheme (schemes)
+(defun xcode-get-nth-item (items name)
   (interactive)
   (with-output-to-temp-buffer "*xcode*"
-    (xcode-print-schemes-list schemes))
+    (xcode-print-items-list items name))
   (let (n)
-    (setq n (read-number "Select scheme: " 0))
-    (print (nth n schemes))))
+    (setq n (read-number "Select item: " 0))
+    (print (nth n items))))
 
-(defun xcode-get-schemes (schemes)
-  (xcode-get-nth-scheme (xcode-extract-schemes schemes)))
- 
-(xcode-get-schemes xcode-out)
+(defun xcode-get-items (project-info name)
+  (xcode-get-nth-item (xcode-extract project-info "Targets:" "Build") name))
+
+(xcode-get-items xcode-out "target")
